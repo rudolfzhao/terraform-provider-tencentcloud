@@ -214,7 +214,7 @@ func resourceTencentCloudEmrClusterUpdate(d *schema.ResourceData, meta interface
 	logId := tccommon.GetLogId(tccommon.ContextNil)
 	ctx := context.WithValue(context.TODO(), tccommon.LogIdKey, logId)
 
-	immutableFields := []string{"placement", "placement_info", "display_strategy", "login_settings"}
+	immutableFields := []string{"placement", "placement_info", "display_strategy", "login_settings", "resource_spec.0.master_count", "resource_spec.0.task_count", "resource_spec.0.core_count"}
 	for _, f := range immutableFields {
 		if d.HasChange(f) {
 			return fmt.Errorf("cannot update argument `%s`", f)
@@ -328,10 +328,8 @@ func resourceTencentCloudEmrClusterCreate(d *schema.ResourceData, meta interface
 	err = resource.Retry(10*tccommon.ReadRetryTimeout, func() *resource.RetryError {
 		clusters, err := emrService.DescribeInstancesById(ctx, instanceId, displayStrategy)
 
-		if e, ok := err.(*errors.TencentCloudSDKError); ok {
-			if e.GetCode() == "InternalError.ClusterNotFound" {
-				return nil
-			}
+		if err != nil {
+			return resource.RetryableError(err)
 		}
 
 		if len(clusters) > 0 {
@@ -342,9 +340,6 @@ func resourceTencentCloudEmrClusterCreate(d *schema.ResourceData, meta interface
 			}
 		}
 
-		if err != nil {
-			return resource.RetryableError(err)
-		}
 		return nil
 	})
 	if err != nil {
@@ -377,10 +372,7 @@ func resourceTencentCloudEmrClusterDelete(d *schema.ResourceData, meta interface
 		clusters, err := emrService.DescribeInstancesById(ctx, instanceId, DisplayStrategyIsclusterList)
 
 		if e, ok := err.(*errors.TencentCloudSDKError); ok {
-			if e.GetCode() == "InternalError.ClusterNotFound" {
-				return nil
-			}
-			if e.GetCode() == "UnauthorizedOperation" {
+			if e.GetCode() == "ResourceNotFound.InstanceNotFound" {
 				return nil
 			}
 		}
@@ -619,7 +611,7 @@ func resourceTencentCloudEmrClusterRead(d *schema.ResourceData, meta interface{}
 			"zone": *instance.Zone,
 		})
 		_ = d.Set("placement_info", []interface{}{placement})
-		if instance.MasterIp != nil {
+		if instance.MasterIp != nil && len(*instance.MasterIp) > 2 {
 			_ = d.Set("need_master_wan", "NEED_MASTER_WAN")
 		} else {
 			_ = d.Set("need_master_wan", "NOT_NEED_MASTER_WAN")

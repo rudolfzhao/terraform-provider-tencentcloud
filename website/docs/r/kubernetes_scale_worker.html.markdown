@@ -118,30 +118,33 @@ The following arguments are supported:
 
 * `cluster_id` - (Required, String, ForceNew) ID of the cluster.
 * `worker_config` - (Required, List, ForceNew) Deploy the machine configuration information of the 'WORK' service, and create <=20 units for common users.
-* `data_disk` - (Optional, List, ForceNew) Configurations of data disk.
+* `data_disk` - (Optional, List, ForceNew) Configurations of tke data disk.
 * `desired_pod_num` - (Optional, Int, ForceNew) Indicate to set desired pod number in current node. Valid when the cluster enable customized pod cidr.
 * `docker_graph_path` - (Optional, String, ForceNew) Docker graph path. Default is `/var/lib/docker`.
 * `extra_args` - (Optional, List: [`String`], ForceNew) Custom parameter information related to the node.
 * `gpu_args` - (Optional, List, ForceNew) GPU driver parameters.
 * `labels` - (Optional, Map, ForceNew) Labels of kubernetes scale worker created nodes.
 * `mount_target` - (Optional, String, ForceNew) Mount target. Default is not mounting.
-* `unschedulable` - (Optional, Int, ForceNew) Sets whether the joining node participates in the schedule. Default is '0'. Participate in scheduling.
+* `pre_start_user_script` - (Optional, String, ForceNew) Base64-encoded user script, executed before initializing the node, currently only effective for adding existing nodes.
+* `unschedulable` - (Optional, Int, ForceNew) Set whether the added node participates in scheduling. The default value is 0, which means participating in scheduling; non-0 means not participating in scheduling. After the node initialization is completed, you can execute kubectl uncordon nodename to join the node in scheduling.
+* `user_script` - (Optional, String, ForceNew) Base64 encoded user script, this script will be executed after the k8s component is run. The user needs to ensure that the script is reentrant and retry logic. The script and its generated log files can be viewed in the /data/ccs_userscript/ path of the node, if required. The node needs to be initialized before it can be added to the schedule. It can be used with the unschedulable parameter. After the final initialization of userScript is completed, add the kubectl uncordon nodename --kubeconfig=/root/.kube/config command to add the node to the schedule.
 
 The `data_disk` object of `worker_config` supports the following:
 
-* `auto_format_and_mount` - (Optional, Bool, ForceNew) Indicate whether to auto format and mount or not. Default is `false`.
-* `disk_partition` - (Optional, String, ForceNew) The name of the device or partition to mount.
+* `auto_format_and_mount` - (Optional, Bool, ForceNew, **Deprecated**) This argument was deprecated, use `data_disk` instead. Indicate whether to auto format and mount or not. Default is `false`.
+* `disk_partition` - (Optional, String, ForceNew, **Deprecated**) This argument was deprecated, use `data_disk` instead. The name of the device or partition to mount.
 * `disk_size` - (Optional, Int, ForceNew) Volume of disk in GB. Default is `0`.
 * `disk_type` - (Optional, String, ForceNew) Types of disk, available values: `CLOUD_PREMIUM` and `CLOUD_SSD` and `CLOUD_HSSD` and `CLOUD_TSSD`.
 * `encrypt` - (Optional, Bool) Indicates whether to encrypt data disk, default `false`.
-* `file_system` - (Optional, String, ForceNew) File system, e.g. `ext3/ext4/xfs`.
+* `file_system` - (Optional, String, ForceNew, **Deprecated**) This argument was deprecated, use `data_disk` instead. File system, e.g. `ext3/ext4/xfs`.
 * `kms_key_id` - (Optional, String) ID of the custom CMK in the format of UUID or `kms-abcd1234`. This parameter is used to encrypt cloud disks.
-* `mount_target` - (Optional, String, ForceNew) Mount target.
+* `mount_target` - (Optional, String, ForceNew, **Deprecated**) This argument was deprecated, use `data_disk` instead. Mount target.
 * `snapshot_id` - (Optional, String, ForceNew) Data disk snapshot ID.
 
 The `data_disk` object supports the following:
 
 * `auto_format_and_mount` - (Optional, Bool, ForceNew) Indicate whether to auto format and mount or not. Default is `false`.
+* `disk_partition` - (Optional, String, ForceNew) The name of the device or partition to mount.
 * `disk_size` - (Optional, Int, ForceNew) Volume of disk in GB. Default is `0`.
 * `disk_type` - (Optional, String, ForceNew) Types of disk, available values: `CLOUD_PREMIUM` and `CLOUD_SSD` and `CLOUD_HSSD` and `CLOUD_TSSD`.
 * `file_system` - (Optional, String, ForceNew) File system, e.g. `ext3/ext4/xfs`.
@@ -163,7 +166,7 @@ The `worker_config` object supports the following:
 * `bandwidth_package_id` - (Optional, String) bandwidth package id. if user is standard user, then the bandwidth_package_id is needed, or default has bandwidth_package_id.
 * `cam_role_name` - (Optional, String, ForceNew) CAM role name authorized to access.
 * `count` - (Optional, Int, ForceNew) Number of cvm.
-* `data_disk` - (Optional, List, ForceNew) Configurations of data disk.
+* `data_disk` - (Optional, List, ForceNew) Configurations of cvm data disk.
 * `desired_pod_num` - (Optional, Int, ForceNew) Indicate to set desired pod number in node. valid when enable_customized_pod_cidr=true, and it override `[globe_]desired_pod_num` for current node. Either all the fields `desired_pod_num` or none.
 * `disaster_recover_group_ids` - (Optional, List, ForceNew) Disaster recover groups to which a CVM instance belongs. Only support maximum 1.
 * `enhanced_monitor_service` - (Optional, Bool, ForceNew) To specify whether to enable cloud monitor service. Default is TRUE.
@@ -183,7 +186,7 @@ The `worker_config` object supports the following:
 * `security_group_ids` - (Optional, List, ForceNew) Security groups to which a CVM instance belongs.
 * `system_disk_size` - (Optional, Int, ForceNew) Volume of system disk in GB. Default is `50`.
 * `system_disk_type` - (Optional, String, ForceNew) System disk type. For more information on limits of system disk types, see [Storage Overview](https://intl.cloud.tencent.com/document/product/213/4952). Valid values: `LOCAL_BASIC`: local disk, `LOCAL_SSD`: local SSD disk, `CLOUD_SSD`: SSD, `CLOUD_PREMIUM`: Premium Cloud Storage. NOTE: `CLOUD_BASIC`, `LOCAL_BASIC` and `LOCAL_SSD` are deprecated.
-* `user_data` - (Optional, String, ForceNew) ase64-encoded User Data text, the length limit is 16KB.
+* `user_data` - (Optional, String, ForceNew) User data provided to instances, needs to be encoded in base64, and the maximum supported data size is 16KB.
 
 ## Attributes Reference
 
@@ -197,4 +200,12 @@ In addition to all arguments above, the following attributes are exported:
   * `instance_state` - State of the cvm.
   * `lan_ip` - LAN IP of the cvm.
 
+
+## Import
+
+tke scale worker can be imported, e.g.
+
+```
+$ terraform import tencentcloud_kubernetes_scale_worker.test cls-xxx#ins-xxx
+```
 

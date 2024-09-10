@@ -13,9 +13,34 @@ Use this data source to query cvm instances.
 
 ## Example Usage
 
+### Query all cvm instances
+
 ```hcl
-data "tencentcloud_instances" "foo" {
-  instance_id = "ins-da412f5a"
+data "tencentcloud_instances" "example" {}
+```
+
+### Query cvm instances by filters
+
+```hcl
+data "tencentcloud_instances" "example" {
+  instance_id       = "ins-a81rnm8c"
+  instance_name     = "tf_example"
+  availability_zone = "ap-guangzhou-6"
+  project_id        = 0
+  vpc_id            = "vpc-l040hycv"
+  subnet_id         = "subnet-1to7t9au"
+
+  tags = {
+    tagKey = "tagValue"
+  }
+}
+```
+
+### Or by instance set id list
+
+```hcl
+data "tencentcloud_instances" "example" {
+  instance_set_ids = ["ins-a81rnm8c"]
 }
 ```
 
@@ -24,6 +49,7 @@ data "tencentcloud_instances" "foo" {
 The following arguments are supported:
 
 * `availability_zone` - (Optional, String) The available zone that the CVM instance locates at.
+* `dedicated_cluster_id` - (Optional, String) Exclusive cluster id.
 * `instance_id` - (Optional, String) ID of the instances to be queried.
 * `instance_name` - (Optional, String) Name of the instances to be queried.
 * `instance_set_ids` - (Optional, List: [`String`]) Instance set ids, max length is 100, conflict with other field.
@@ -48,6 +74,7 @@ In addition to all arguments above, the following attributes are exported:
     * `data_disk_size` - Size of the data disk.
     * `data_disk_type` - Type of the data disk.
     * `delete_with_instance` - Indicates whether the data disk is destroyed with the instance.
+  * `dedicated_cluster_id` - Exclusive cluster id.
   * `expired_time` - Expired time of the instance.
   * `image_id` - ID of the image.
   * `instance_charge_type_prepaid_renew_flag` - The way that CVM instance will be renew automatically or not when it reach the end of the prepaid tenancy.
@@ -69,6 +96,7 @@ In addition to all arguments above, the following attributes are exported:
   * `system_disk_size` - Size of the system disk.
   * `system_disk_type` - Type of the system disk.
   * `tags` - Tags of the instance.
+  * `uuid` - Globally unique ID of the instance.
   * `vpc_id` - ID of the vpc.
 
 

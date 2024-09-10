@@ -476,18 +476,25 @@ func (me *MongodbService) DescribeSecurityGroup(ctx context.Context, instanceId 
 	logId := tccommon.GetLogId(ctx)
 	request := mongodb.NewDescribeSecurityGroupRequest()
 	request.InstanceId = helper.String(instanceId)
-	ratelimit.Check(request.GetAction())
-	response, err := me.client.UseMongodbClient().DescribeSecurityGroup(request)
+
+	err := resource.Retry(tccommon.ReadRetryTimeout, func() *resource.RetryError {
+		ratelimit.Check(request.GetAction())
+		response, e := me.client.UseMongodbClient().DescribeSecurityGroup(request)
+		if e != nil {
+			log.Printf("[CRITAL]%s api[%s] fail, request body [%s], reason[%s]",
+				logId, request.GetAction(), request.ToJsonString(), e.Error())
+			return tccommon.RetryError(e)
+		}
+		log.Printf("[DEBUG]%s api[%s] success, request body [%s], response body [%s]",
+			logId, request.GetAction(), request.ToJsonString(), response.ToJsonString())
+
+		groups = response.Response.Groups
+		return nil
+	})
 	if err != nil {
-		log.Printf("[CRITAL]%s api[%s] fail, request body [%s], reason[%s]",
-			logId, request.GetAction(), request.ToJsonString(), err.Error())
 		errRet = err
 		return
 	}
-	log.Printf("[DEBUG]%s api[%s] success, request body [%s], response body [%s]",
-		logId, request.GetAction(), request.ToJsonString(), response.ToJsonString())
-
-	groups = response.Response.Groups
 	return
 }
 
@@ -495,18 +502,25 @@ func (me *MongodbService) DescribeDBInstanceNodeProperty(ctx context.Context, in
 	logId := tccommon.GetLogId(ctx)
 	request := mongodb.NewDescribeDBInstanceNodePropertyRequest()
 	request.InstanceId = helper.String(instanceId)
-	ratelimit.Check(request.GetAction())
-	response, err := me.client.UseMongodbClient().DescribeDBInstanceNodeProperty(request)
+
+	err := resource.Retry(tccommon.ReadRetryTimeout, func() *resource.RetryError {
+		ratelimit.Check(request.GetAction())
+		response, e := me.client.UseMongodbClient().DescribeDBInstanceNodeProperty(request)
+		if e != nil {
+			log.Printf("[CRITAL]%s api[%s] fail, request body [%s], reason[%s]",
+				logId, request.GetAction(), request.ToJsonString(), e.Error())
+			return tccommon.RetryError(e)
+		}
+		log.Printf("[DEBUG]%s api[%s] success, request body [%s], response body [%s]",
+			logId, request.GetAction(), request.ToJsonString(), response.ToJsonString())
+
+		replicateSets = response.Response.ReplicateSets
+		return nil
+	})
 	if err != nil {
-		log.Printf("[CRITAL]%s api[%s] fail, request body [%s], reason[%s]",
-			logId, request.GetAction(), request.ToJsonString(), err.Error())
 		errRet = err
 		return
 	}
-	log.Printf("[DEBUG]%s api[%s] success, request body [%s], response body [%s]",
-		logId, request.GetAction(), request.ToJsonString(), response.ToJsonString())
-
-	replicateSets = response.Response.ReplicateSets
 	return
 }
 
@@ -888,4 +902,24 @@ func (me *MongodbService) DescribeDBInstanceDeal(ctx context.Context, dealId str
 	log.Printf("[DEBUG]%s api[%s] success, request body [%s], response body [%s]\n", logId, request.GetAction(), request.ToJsonString(), response.ToJsonString())
 
 	return
+}
+
+func (me *MongodbService) SetInstanceMaintenance(ctx context.Context, instanceId, maintenanceStart, maintenanceEnd string) error {
+	logId := tccommon.GetLogId(ctx)
+
+	request := mongodb.NewSetInstanceMaintenanceRequest()
+	request.InstanceId = helper.String(instanceId)
+	request.MaintenanceStart = helper.String(maintenanceStart)
+	request.MaintenanceEnd = helper.String(maintenanceEnd)
+
+	ratelimit.Check(request.GetAction())
+
+	response, err := me.client.UseMongodbClient().SetInstanceMaintenance(request)
+	if err != nil {
+		log.Printf("[CRITAL]%s api[%s] fail, request body [%s], reason[%s]\n", logId, request.GetAction(), request.ToJsonString(), err.Error())
+		return err
+	}
+	log.Printf("[DEBUG]%s api[%s] success, request body [%s], response body [%s]\n", logId, request.GetAction(), request.ToJsonString(), response.ToJsonString())
+
+	return nil
 }
